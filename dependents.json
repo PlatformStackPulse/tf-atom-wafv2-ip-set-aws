@@ -1,0 +1,3 @@
+{
+  "molecules": ["PlatformStackPulse/tf-molecule-waf-regional-aws","PlatformStackPulse/tf-molecule-waf-cloudfront-aws"]
+}

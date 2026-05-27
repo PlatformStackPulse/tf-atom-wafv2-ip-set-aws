@@ -116,3 +116,27 @@ jobs:
           echo "- **Version**: ${{ steps.bump.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Triggered by**: CI success on main" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Artifacts**: module archive + SHA256SUMS" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify dependents
+        if: steps.check.outputs.skip == 'false' && steps.bump.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.bump.outputs.version }}"
+          ATOM_NAME=$(basename "$GITHUB_REPOSITORY")
+          ATOM_REPO="${GITHUB_REPOSITORY}"
+
+          if [[ ! -f dependents.json ]]; then
+            echo "No dependents.json found. Skipping cascade."
+            exit 0
+          fi
+
+          MOLECULES=$(jq -r '.molecules[]' dependents.json)
+          for MOL in $MOLECULES; do
+            echo "Dispatching to $MOL..."
+            gh api --method POST "/repos/$MOL/dispatches" \
+              -f event_type=atom-release \
+              -f "client_payload[atom_name]=$ATOM_NAME" \
+              -f "client_payload[atom_version]=$VERSION" \
+              -f "client_payload[atom_repo]=$ATOM_REPO" || echo "  Warning: dispatch to $MOL failed"
+          done
