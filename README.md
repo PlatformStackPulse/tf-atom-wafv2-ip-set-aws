@@ -1,14 +1,16 @@
 # tf-atom-wafv2-ip-set-aws
 
+[![Terraform Format](https://img.shields.io/badge/terraform-fmt-blue?logo=terraform)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![Terraform Validate](https://img.shields.io/badge/terraform-validate-blue?logo=terraform)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![TFLint](https://img.shields.io/badge/tflint-passing-brightgreen?logo=terraform)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![Terraform Test](https://img.shields.io/badge/tests-2%20passed-brightgreen?logo=terraform)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![Security Scan](https://img.shields.io/badge/trivy-passing-brightgreen?logo=aqua)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![Conventional Commits](https://img.shields.io/badge/commits-conventional-blue?logo=conventionalcommits)](https://conventionalcommits.org)
+[![Documentation](https://img.shields.io/badge/docs-terraform--docs-blue?logo=readthedocs)](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue?logo=opensourceinitiative)](LICENSE)
+
 > Terraform atom that provisions an **AWS WAFv2 IP Set** — a reusable, named list of IP addresses / CIDR blocks that WAFv2 rules reference for allow-listing or block-listing traffic.
 
-[![CI](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-[![Release](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/auto-release.yml/badge.svg)](../../actions/workflows/auto-release.yml)
-[![CodeQL](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml)
-[![Changelog](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/changelog.yml/badge.svg)](../../actions/workflows/changelog.yml)
-![Latest Release](https://img.shields.io/github/v/release/PlatformStackPulse/tf-atom-wafv2-ip-set-aws?label=latest%20release&sort=semver)
-![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blue?logo=terraform)
-![License](https://img.shields.io/github/license/PlatformStackPulse/tf-atom-wafv2-ip-set-aws)
 
 This module wraps [`aws_wafv2_ip_set`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_ip_set) and layers on the [tf-label](https://github.com/PlatformStackPulse/tf-label) naming/tagging convention so the IP set gets a consistent, namespaced name and standard tags. Reference the resulting `arn` from a WAFv2 rule statement (`ip_set_reference_statement`) to allow or block the listed addresses.
 
