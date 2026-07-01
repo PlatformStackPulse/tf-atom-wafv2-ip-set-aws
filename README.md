@@ -1,30 +1,64 @@
-# Terraform Module Template
+# tf-atom-wafv2-ip-set-aws
 
-<!-- Badges: Update REPO_OWNER/REPO_NAME after creating from template -->
-[![CI](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
-[![Release](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/auto-release.yml/badge.svg)](../../actions/workflows/auto-release.yml)
-[![CodeQL](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml)
-[![Changelog](https://github.com/PlatformStackPulse/terraform-atom-molecule-module-template/actions/workflows/changelog.yml/badge.svg)](../../actions/workflows/changelog.yml)
-![Latest Release](https://img.shields.io/github/v/release/PlatformStackPulse/terraform-atom-molecule-module-template?label=latest%20release&sort=semver)
+> Terraform atom that provisions an **AWS WAFv2 IP Set** — a reusable, named list of IP addresses / CIDR blocks that WAFv2 rules reference for allow-listing or block-listing traffic.
+
+[![CI](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![Release](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/auto-release.yml/badge.svg)](../../actions/workflows/auto-release.yml)
+[![CodeQL](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/codeql.yml/badge.svg)](../../actions/workflows/codeql.yml)
+[![Changelog](https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws/actions/workflows/changelog.yml/badge.svg)](../../actions/workflows/changelog.yml)
+![Latest Release](https://img.shields.io/github/v/release/PlatformStackPulse/tf-atom-wafv2-ip-set-aws?label=latest%20release&sort=semver)
 ![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blue?logo=terraform)
-![License](https://img.shields.io/github/license/PlatformStackPulse/terraform-atom-molecule-module-template)
+![License](https://img.shields.io/github/license/PlatformStackPulse/tf-atom-wafv2-ip-set-aws)
 
-A production-ready template for creating Terraform modules following the **one module per repository** best practice, with built-in CI/CD, security scanning, testing, documentation generation, and publishing to public registries.
+This module wraps [`aws_wafv2_ip_set`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_ip_set) and layers on the [tf-label](https://github.com/PlatformStackPulse/tf-label) naming/tagging convention so the IP set gets a consistent, namespaced name and standard tags. Reference the resulting `arn` from a WAFv2 rule statement (`ip_set_reference_statement`) to allow or block the listed addresses.
 
 ## Features
 
-- **One Module Per Repo** — Module lives at the root; no nested `modules/` directory
-- **Registry Publishing** — Auto-publish to Terraform Registry, Artifactory, or GitLab on release
-- **Native Terraform Testing** — `terraform test` with mock providers (no external tools)
-- **Security Scanning** — Trivy IaC scanning for HIGH/CRITICAL vulnerabilities
-- **Linting** — TFLint with AWS ruleset (preset "all")
-- **Auto Documentation** — terraform-docs generates README sections on every commit
-- **GitHub Actions CI/CD** — Workflows for the full module lifecycle
-- **Auto Release** — CI passes on main → auto-tag → GitHub Release created
-- **Pre-Commit Hooks** — Format, validate, lint, docs, and security on every commit
-- **Conventional Commits** — Enforced commit message format
-- **Semantic Versioning** — Automated version management and releases
-- **DevContainer** — VS Code remote development ready
+- **AWS WAFv2 IP Set** — Manages a single named IP set of IP addresses / CIDR blocks.
+- **REGIONAL and CLOUDFRONT scope** — `scope` selects between regional (ALB/API Gateway/AppSync) and CloudFront (global, `us-east-1`) WAFv2 deployments.
+- **IPv4 and IPv6** — `ip_address_version` supports both address families (validated).
+- **Input validation** — `scope` and `ip_address_version` reject invalid values at plan time.
+- **tf-label naming & tagging** — Consistent `namespace-environment-stage-name` id and standard tags via `module.this`.
+- **`enabled` toggle** — Set `enabled = false` to create no resources while keeping the call in place.
+- **Stable outputs** — Exposes `id`, `arn`, and `enabled` for downstream WAFv2 rule wiring.
+
+## Usage
+
+```hcl
+module "waf_allowlist" {
+  source = "git::https://github.com/PlatformStackPulse/tf-atom-wafv2-ip-set-aws.git?ref=v1.0.0"
+
+  # tf-label context
+  namespace   = "eg"
+  environment = "prod"
+  stage       = "release"
+  name        = "office-allowlist"
+
+  # module inputs
+  scope              = "REGIONAL" # or "CLOUDFRONT" (must be provisioned in us-east-1)
+  ip_address_version = "IPV4"
+  description        = "Corporate office egress IPs permitted through WAF"
+  addresses = [
+    "203.0.113.0/24",
+    "198.51.100.10/32",
+  ]
+
+  tags = {
+    Project = "edge-security"
+    Owner   = "platform-engineering"
+  }
+}
+
+# Reference the IP set from a WAFv2 rule
+# statement {
+#   ip_set_reference_statement {
+#     arn = module.waf_allowlist.arn
+#   }
+# }
+```
+
+`scope` is the only required module-specific input. `addresses` defaults to `[]` (an empty
+IP set you can populate later), and `ip_address_version` defaults to `IPV4`.
 
 ## CI Pipeline
 
@@ -44,73 +78,27 @@ PR merged → CI runs → All pass → Auto-tag (semver) → GitHub Release
 | Docs | terraform-docs freshness check | Must pass |
 | Commit Lint | Conventional commit format (PR only) | Must pass |
 
-## Quick Start
+## Tests
 
-### Create a New Module
+This module ships native `terraform test` unit tests using a **mock AWS provider** — no
+real AWS calls or credentials are required.
 
 ```bash
-# Create repo from template (name MUST follow: terraform-<PROVIDER>-<NAME>)
-gh repo create PlatformStackPulse/terraform-aws-my-module --template PlatformStackPulse/Terraform-module-base-template --public
-
-# Clone
-git clone git@github.com:PlatformStackPulse/terraform-aws-my-module.git
-cd terraform-aws-my-module
-
-# Install tools and hooks
-make dev-setup
-make hooks
-
-# Run all checks
-make all
+make test-unit
+# or directly:
+terraform init -backend=false
+terraform test -test-directory=tests/unit
 ```
 
-### Customise the Template
+The unit suite (`tests/unit/main_test.tftest.hcl`) asserts on plan-known values only:
 
-1. Replace the example S3 resources in `main.tf` with your actual resources
-2. Update `variables.tf`, `outputs.tf`, and `versions.tf`
-3. Write tests in `tests/unit/main_test.tftest.hcl`
-4. Update `examples/complete/` with real usage
-5. Update `.github/CODEOWNERS`
-6. Update this `README.md`
+- **`creates_when_enabled`** — one IP set is planned, its name equals the tf-label id
+  (`eg-test-thing`), and `scope` / `addresses` pass through to the resource.
+- **`disabled_creates_nothing`** — with `enabled = false`, no resource is planned and the
+  `arn` / `id` outputs collapse to `""`.
 
-See [TEMPLATE_GUIDE.md](TEMPLATE_GUIDE.md) for detailed instructions.
-
-## Usage
-
-### From GitHub
-
-```hcl
-module "this" {
-  source = "github.com/PlatformStackPulse/terraform-aws-my-module?ref=v1.0.0"
-
-  name        = "my-resource"
-  environment = "dev"
-  namespace   = "myorg"
-
-  tags = {
-    Project = "example"
-    Owner   = "platform-engineering"
-  }
-}
-```
-
-### From Terraform Registry
-
-```hcl
-module "this" {
-  source  = "PlatformStackPulse/my-module/aws"
-  version = "~> 1.0"
-
-  name        = "my-resource"
-  environment = "dev"
-  namespace   = "myorg"
-
-  tags = {
-    Project = "example"
-    Owner   = "platform-engineering"
-  }
-}
-```
+Integration tests (`tests/integration/`, real AWS) run via `make test-integration` and
+require AWS credentials.
 
 ## Module Structure
 
